@@ -15,7 +15,6 @@ package glog
 import (
 	"flag"
 	"io/ioutil"
-	stdLog "log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,7 +49,6 @@ type RotateOption struct {
 
 // start a rotation with RotateOption
 func StartRotation(option RotateOption) *rotation {
-	stdLog.Printf("rotate 1")
 	r := &rotation{
 		dir:            option.Dir,
 		prefix:         option.Prefix,
@@ -115,7 +113,6 @@ func (r *rotation) cleaner() {
 
 // rotate glog, The idea is simple: we change MaxSize to a very small value, so that the next write will definitely makes it to rotate. After that, we just restore the default size value.
 func (r *rotation) rotate() {
-	stdLog.Printf("rotate 1")
 	Rotate()
 }
 
