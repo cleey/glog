@@ -5,7 +5,7 @@ Leveled execution logs for Go.
 
 This is an efficient pure Go implementation of leveled logs in the
 manner of the open source C++ package
-	https://github.com/google/glog
+	https://github.com/cleey/glog
 
 By binding methods to booleans it is possible to use the log package
 without paying the expense of evaluating the arguments to the log.
@@ -42,3 +42,37 @@ Google, not here. The code in this repo is for export only and is not itself
 under development. Feature requests will be ignored.
 
 Send bug reports to golang-nuts@googlegroups.com.
+
+
+# log rotate
+# Usage
+```
+import "github.com/cleey/glog"
+```
+## Example 1 · Recommend
+this example will rotate every hour(default) and clean the log files that creation time older than 24 hours.
+
+```
+glog.StartRotation(glog.RotateOption{
+    Remain: time.Duration(time.Hour * 24),
+})
+```
+
+## Example 2 · With all args
+this example will rotate every 3 seconds and clean the log files that creation time older than 10 seconds.
+
+```
+glog.StartRotation(glog.RotateOption{
+    Dir:    logDir,      // default is glog log_dir
+    Prefix: programName, // default is current programName
+    RotateInterval: time.Duration(time.Second * 3), // default is 1 hour
+    CleanInterval:  time.Duration(time.Second * 3), // default is 1 minute
+    Remain: time.Duration(time.Second * 10),
+})
+```
+
+# Contributing
+Contributions are welcome! Open a pull request to fix a bug, or open an issue to discuss a new feature or change.
+
+# Licenses
+This program is under the terms of the MIT License. See LICENSE for the full license text.
