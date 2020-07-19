@@ -390,6 +390,7 @@ func (t *traceLocation) Set(value string) error {
 
 // flushSyncWriter is the interface satisfied by logging destinations.
 type flushSyncWriter interface {
+	Rotate(time.Time) error
 	Flush() error
 	Sync() error
 	io.Writer
@@ -413,6 +414,11 @@ func init() {
 // Flush flushes all pending log I/O.
 func Flush() {
 	logging.lockAndFlushAll()
+}
+
+// Flush flushes all pending log I/O.
+func Rotate() {
+	logging.lockAndRotateAll()
 }
 
 // loggingT collects all the global state of the logging setup.
@@ -813,7 +819,7 @@ func (sb *syncBuffer) Sync() error {
 
 func (sb *syncBuffer) Write(p []byte) (n int, err error) {
 	if sb.nbytes+uint64(len(p)) >= MaxSize {
-		if err := sb.rotateFile(time.Now()); err != nil {
+		if err := sb.Rotate(time.Now()); err != nil {
 			sb.logger.exit(err)
 		}
 	}
@@ -825,8 +831,8 @@ func (sb *syncBuffer) Write(p []byte) (n int, err error) {
 	return
 }
 
-// rotateFile closes the syncBuffer's file and starts a new one.
-func (sb *syncBuffer) rotateFile(now time.Time) error {
+// Rotate closes the syncBuffer's file and starts a new one.
+func (sb *syncBuffer) Rotate(now time.Time) error {
 	if sb.file != nil {
 		sb.Flush()
 		sb.file.Close()
@@ -867,7 +873,7 @@ func (l *loggingT) createFiles(sev severity) error {
 			logger: l,
 			sev:    s,
 		}
-		if err := sb.rotateFile(now); err != nil {
+		if err := sb.Rotate(now); err != nil {
 			return err
 		}
 		l.file[s] = sb
@@ -891,6 +897,13 @@ func (l *loggingT) lockAndFlushAll() {
 	l.mu.Unlock()
 }
 
+// lockAndRotateAll is like rotateAll but locks l.mu first.
+func (l *loggingT) lockAndRotateAll() {
+	l.mu.Lock()
+	l.rotateAll()
+	l.mu.Unlock()
+}
+
 // flushAll flushes all the logs and attempts to "sync" their data to disk.
 // l.mu is held.
 func (l *loggingT) flushAll() {
@@ -900,6 +913,23 @@ func (l *loggingT) flushAll() {
 		if file != nil {
 			file.Flush() // ignore error
 			file.Sync()  // ignore error
+		}
+	}
+}
+
+// rotateAll rotate all the logs
+// l.mu is held.
+func (l *loggingT) rotateAll() {
+	now := time.Now()
+
+	// rotate from fatal down, in case there's trouble flushing.
+	for s := fatalLog; s >= infoLog; s-- {
+		stdLog.Printf("rotate s: %v", s)
+		if file := l.file[s]; file != nil {
+			stdLog.Printf("rotate : %v", file)
+			if err := file.Rotate(now); err != nil {
+				l.exit(err)
+			}
 		}
 	}
 }
