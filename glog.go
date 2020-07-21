@@ -924,9 +924,7 @@ func (l *loggingT) rotateAll() {
 
 	// rotate from fatal down, in case there's trouble flushing.
 	for s := fatalLog; s >= infoLog; s-- {
-		stdLog.Printf("rotate s: %v", s)
 		if file := l.file[s]; file != nil {
-			stdLog.Printf("rotate : %v", file)
 			if err := file.Rotate(now); err != nil {
 				l.exit(err)
 			}
